@@ -1,4 +1,4 @@
-import { Color, FENChar } from "./models";
+import { Color, Coords, FENChar, SafeSquares } from "./models";
 import { Bishop } from "./pieces/bishop";
 import { King } from "./pieces/king";
 import { Knight } from "./pieces/knight";
@@ -107,5 +107,70 @@ export class ChessBoard {
         this.chessBoard[newX][newY] = newPiece;
 
         return isPositionSafe;
+    }
+
+    private findSafeSquares(): SafeSquares {
+        const safeSquares: SafeSquares = new Map<string, Coords[]>();
+
+        for(let x = 0; x < this._chessBoardSize; x++) {
+            for(let y = 0; y < this._chessBoardSize; y++) {
+                const piece: Piece | null = this.chessBoard[x][y];
+                if(!piece || piece.color !== this._playerColor) continue;
+
+                const pieceSafeSqares: Coords[] = [];
+
+                for(const {x: dx, y: dy} of piece.direction) {
+                    let newX: number = x + dx;
+                    let newY: number = y + dy;
+
+                    if(!this.areCoordsValid(newX, newY)) continue;
+
+                    let newPiece: Piece|null = this.chessBoard[newX][newY];
+
+                    if(newPiece && newPiece.color === piece.color) continue;
+
+                    // need to restrict pawn moves in certain directions
+                    if(piece instanceof Pawn) {
+                        //cant move pawn to squares straight if there is piece infront of him 
+                        if(dx === 2 || dx === -2) {
+                            if(newPiece) continue;
+                            if(this.chessBoard[newX + (dx === 2 ? -1 : 1)][newY]) continue;
+                        }
+
+                        //cant move pawn one square straight if piece is infront of him
+                        if((dx === 1 || dx === -1) && dy === 0 && newPiece) continue;
+
+                        //cant move pawn diagonally if there is no piece or piece has the same color as pawn
+                        if((dx === 1 || dx === -1) && (!newPiece || piece.color === newPiece.color)) continue;
+                    }
+                    if(piece instanceof Pawn || piece instanceof Knight || piece instanceof King) {
+                        if(this.isPositionSafeAfterMove(piece, x, y, newX, newY)) {
+                            pieceSafeSqares.push({x: newX, y: newY});
+                        }
+                    } else {
+                        while(this.areCoordsValid(newX, newY)) {
+                            newPiece = this.chessBoard[newX][newY];
+                            if(newPiece && newPiece.color === piece.color) break;
+
+                            if(this.isPositionSafeAfterMove(piece, x, y, newX, newY)) {
+                                pieceSafeSqares.push({x: newX, y: newY});
+                            }
+
+                            if(newPiece !== null) break;
+
+                            newX += dx;
+                            newY += dy;
+                        }
+                        
+                    }
+                }
+
+                if(pieceSafeSqares.length) [
+                    safeSquares.set(x + "," + y, pieceSafeSqares)
+                ]
+            }
+        }
+
+        return safeSquares;
     }
 }
