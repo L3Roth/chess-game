@@ -5,7 +5,7 @@
             'selected-square': isSquareSelected(x, y)
         }" 
         
-        (click)="selectingPiece(x, y)">
+        (click)="move(x, y)">
         <div [ngClass]="{'safe-square': isSquareSafeForSelectedPiece(x, y)}"></div>
         <img *ngIf="piece" [src]="pieceImagePaths[piece]" alt="piece" class="piece">
         </div>
