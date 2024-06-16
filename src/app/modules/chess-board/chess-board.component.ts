@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ChessBoard } from 'src/app/chess-logic/chess-board';
-import { Color, Coords, FENChar, pieceImagePaths, SafeSquares } from 'src/app/chess-logic/models';
+import { CheckState, Color, Coords, FENChar, LastMove, pieceImagePaths, SafeSquares } from 'src/app/chess-logic/models';
 import { SelectedSquare } from './models';
 
 @Component({
@@ -14,6 +14,8 @@ export class ChessBoardComponent implements OnInit {
   public chessBoardView: (FENChar | null)[][] = this.chessBoard.chessBoardView;
   public get playerColor(): Color{return this.chessBoard.playerColor;};
   public get safeSquares(): SafeSquares {return this.chessBoard.safeSquares;};
+  private lastMove: LastMove | undefined = this.chessBoard.lastMove;
+  private checkState: CheckState = this.chessBoard.checkState;
 
   private selectedSquare: SelectedSquare = {piece: null};
   private pieceSafeSquares: Coords[] = [];
@@ -34,6 +36,16 @@ export class ChessBoardComponent implements OnInit {
 
   public isSquareSafeForSelectedPiece(x: number, y: number): boolean {
     return this.pieceSafeSquares.some(coords => coords.x === x && coords.y === y);
+  }
+
+  public isSquareLastMove(x: number, y: number): boolean {
+    if (!this.lastMove) return false;
+    const { prevX, prevY, currX, currY } = this.lastMove;
+    return x === prevX && y === prevY || x === currX && y === currY;
+  }
+
+  public isSquareChecked(x: number, y: number): boolean {
+    return this.checkState.isInCheck && this.checkState.x === x && this.checkState.y === y;
   }
 
   private unmarkingPreviouslySelectedAndSafeSquares(): void {
@@ -61,6 +73,8 @@ export class ChessBoardComponent implements OnInit {
     const { x: prevX, y: prevY } = this.selectedSquare;
     this.chessBoard.move(prevX, prevY, newX, newY);
     this.chessBoardView = this.chessBoard.chessBoardView;
+    this.checkState = this.chessBoard.checkState;
+    this.lastMove = this.chessBoard.lastMove;
     this.unmarkingPreviouslySelectedAndSafeSquares();
   }
 
